@@ -32,47 +32,11 @@ import org.eclipse.emf.ecore.xmi.XMLResource;
 public class Test {
 
     public void insertTask(Path projectDir, int userInput) {
-        // GALETTE SYMBOLIC EXECUTION: Manually collect path constraints
-        // We use reflection to safely access Galette/Knarr/Green classes
-        // and add constraints based on the switch statement path taken
-
-        try {
-            // Load PathUtils class dynamically
-            Class<?> pathUtilsClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.PathUtils");
-
-            // Add domain constraint: 0 <= user_choice < 5
-            java.lang.reflect.Method addDomainMethod = pathUtilsClass.getMethod(
-                "addIntDomainConstraint", String.class, int.class, int.class);
-            addDomainMethod.invoke(null, "user_choice", 0, 5);
-
-            System.out.println("[Symbolic] Added domain constraint: 0 <= user_choice < 5");
-
-            // Add switch constraint: user_choice == userInput (current path)
-            java.lang.reflect.Method addSwitchMethod = pathUtilsClass.getMethod(
-                "addSwitchConstraint", String.class, int.class);
-            addSwitchMethod.invoke(null, "user_choice", userInput);
-
-            System.out.println("[Symbolic] Added switch constraint: user_choice == " + userInput);
-
-        } catch (Exception e) {
-            // Constraint collection failed - continue with normal execution
-            System.err.println("[Symbolic] Constraint collection failed: " + e.getMessage());
-            if (Boolean.getBoolean("DEBUG")) {
-                e.printStackTrace();
-            }
-        }
-
-        // Validate input range
-        if (userInput < 0 || userInput > 4) {
-            System.err.println("Invalid user choice: " + userInput + " (expected 0-4)");
-            return;
-        }
-
-        // 1) Setup Vitruvius user interaction
+        // 1) 
         var userInteraction = new TestUserInteraction();
         userInteraction.addNextSingleSelection(userInput);
 
-        // 2) Build and initialize VSUM
+        // 2)  VSUM
         InternalVirtualModel vsum = new VirtualModelBuilder()
                 .withStorageFolder(projectDir)
                 .withUserInteractorForResultProvider(
@@ -83,11 +47,11 @@ public class Test {
 
         vsum.setChangePropagationMode(ChangePropagationMode.TRANSITIVE_CYCLIC);
 
-        // 3) Add component container and task to VSUM
+        // 3) VSUM
         addComponentContainer(vsum, projectDir);
         addTask(vsum);
 
-        // 4) Merge and save results
+        // 4) merge and save
         try {
             Path outDir = projectDir.resolve("galette-test-output");
             mergeAndSave(vsum, outDir, "vsum-output.xmi");
