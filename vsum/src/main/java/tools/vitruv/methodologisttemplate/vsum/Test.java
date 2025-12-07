@@ -32,35 +32,10 @@ import org.eclipse.emf.ecore.xmi.XMLResource;
 public class Test {
 
     public void insertTask(Path projectDir, int userInput) {
-        // GALETTE SYMBOLIC EXECUTION: Manually collect path constraints
-        // We use reflection to safely access Galette/Knarr/Green classes
-        // and add constraints based on the switch statement path taken
-
-        try {
-            // Load PathUtils class dynamically
-            Class<?> pathUtilsClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.PathUtils");
-
-            // Add domain constraint: 0 <= user_choice < 5
-            java.lang.reflect.Method addDomainMethod = pathUtilsClass.getMethod(
-                "addIntDomainConstraint", String.class, int.class, int.class);
-            addDomainMethod.invoke(null, "user_choice", 0, 5);
-
-            System.out.println("[Symbolic] Added domain constraint: 0 <= user_choice < 5");
-
-            // Add switch constraint: user_choice == userInput (current path)
-            java.lang.reflect.Method addSwitchMethod = pathUtilsClass.getMethod(
-                "addSwitchConstraint", String.class, int.class);
-            addSwitchMethod.invoke(null, "user_choice", userInput);
-
-            System.out.println("[Symbolic] Added switch constraint: user_choice == " + userInput);
-
-        } catch (Exception e) {
-            // Constraint collection failed - continue with normal execution
-            System.err.println("[Symbolic] Constraint collection failed: " + e.getMessage());
-            if (Boolean.getBoolean("DEBUG")) {
-                e.printStackTrace();
-            }
-        }
+        // GALETTE SYMBOLIC EXECUTION: Constraints are now automatically collected
+        // by the SymbolicComparison class in the reactions file.
+        // No manual constraint recording needed here!
+        System.out.println("[Test.insertTask] Executing with user choice: " + userInput);
 
         // Validate input range
         if (userInput < 0 || userInput > 4) {
