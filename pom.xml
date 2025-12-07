@@ -30,6 +30,10 @@
 
   <properties>
     <vitruv.version>3.1.2</vitruv.version>
+    <!-- Override parent POM's Java 17 to use Java 8 for compatibility -->
+    <maven.compiler.release>8</maven.compiler.release>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
   </properties>
 
   <dependencyManagement>
