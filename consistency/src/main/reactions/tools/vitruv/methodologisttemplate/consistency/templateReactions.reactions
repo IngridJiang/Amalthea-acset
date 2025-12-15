@@ -134,6 +134,8 @@ routine createPeriodicTask(amalthea::Task task, amalthea::ComponentContainer con
 	update {
 		AscetModule.tasks += periodicTask
 		periodicTask.name = task.name
+		periodicTask.delay = 0.10
+		periodicTask.period = 1.0
 		addCorrespondenceBetween(periodicTask, container)
 		
 	}
