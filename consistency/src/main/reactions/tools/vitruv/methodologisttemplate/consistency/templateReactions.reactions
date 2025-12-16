@@ -61,14 +61,14 @@ routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer contai
 	update {
 		val String userMsg = "A Task has been created. Please decide whether and which corresponding ASCET Task should be created."
 
-        val interruptTaskOption = "Create InterruptTask"
+        val initTaskOption = "Create InitTask"
         val periodicTaskOption = "Create PeriodicTask"
         val softwareTaskOption = "Create SoftwareTask"
         val timeTableTaskOption = "Create TimeTableTask"   
         val doNothingOption = "Decide Later"
 
         val String[] options = #[
-            interruptTaskOption,
+            initTaskOption,
             periodicTaskOption,
             softwareTaskOption,
             timeTableTaskOption,
@@ -84,7 +84,7 @@ routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer contai
     
         switch (selected) {
             case 0: {
-                createInterruptTask(task,container)               
+                createInitTask(task,container)               
             }
             case 1: {
                 createPeriodicTask(task,container)
@@ -103,20 +103,20 @@ routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer contai
 	}
 }
 
-routine createInterruptTask(amalthea::Task task, amalthea::ComponentContainer container){
+routine createInitTask(amalthea::Task task, amalthea::ComponentContainer container){
 	
 	match {
 		val AscetModule = retrieve ascet::AscetModule corresponding to container
-		require absence of ascet::InterruptTask corresponding to task
+		require absence of ascet::InitTask corresponding to task
 		 
 	}
 	create {
-		val interruptTask = new ascet::InterruptTask
+		val initTask = new ascet::InitTask
 	}
 	update {
-		AscetModule.tasks += interruptTask
-		interruptTask.name = task.name
-		addCorrespondenceBetween(interruptTask, container)
+		AscetModule.tasks += initTask
+		initTask.name = task.name
+		addCorrespondenceBetween(initTask, container)
 		
 	}
 }
