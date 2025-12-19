@@ -94,7 +94,7 @@ routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer contai
             try {
                 // Get or create tag for this user interaction with tag reuse support
                 // Use fully qualified name: ClassName:MethodName:variableName
-                val qualifiedName = "CreateAscetTaskRoutine:execute:userChoice"
+                val qualifiedName = "CreateAscetTaskRoutine:execute:userChoice_forTask_" + task.name
 
                 // Call GaletteSymbolicator.getOrMakeSymbolicInt to handle tag reuse
                 // This method now returns a tagged Integer directly
