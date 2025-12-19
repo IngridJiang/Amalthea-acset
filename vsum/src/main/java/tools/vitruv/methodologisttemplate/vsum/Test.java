@@ -71,14 +71,112 @@ public class Test {
         }
     }
 
+    /**
+     * Multi-variable version: Insert TWO tasks with TWO user choices.
+     * Used for multi-variable path exploration (5 × 5 = 25 paths).
+     *
+     * @param projectDir Working directory for VSUM
+     * @param userInput1 First user choice (task type for first task)
+     * @param userInput2 Second user choice (task type for second task)
+     */
+    public void insertTwoTasks(Path projectDir, Integer userInput1, Integer userInput2) {
+        System.out.println("========================================");
+        System.out.println("[DEBUG] insertTwoTasks CALLED");
+        System.out.println("[DEBUG] projectDir=" + projectDir);
+        System.out.println("[DEBUG] userInput1=" + userInput1);
+        System.out.println("[DEBUG] userInput2=" + userInput2);
+        System.out.println("========================================");
+
+        // GALETTE SYMBOLIC EXECUTION: Manually collect path constraints for BOTH variables
+        try {
+            Class<?> pathUtilsClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.PathUtils");
+
+            // Add domain constraints for BOTH variables
+            java.lang.reflect.Method addDomainMethod = pathUtilsClass.getMethod(
+                "addIntDomainConstraint", String.class, int.class, int.class);
+            addDomainMethod.invoke(null, "user_choice_1", 0, 5);
+            addDomainMethod.invoke(null, "user_choice_2", 0, 5);
+
+            System.out.println("[Symbolic] Added domain constraints: 0 <= user_choice_1 < 5, 0 <= user_choice_2 < 5");
+
+            // Add switch constraints for BOTH variables
+            java.lang.reflect.Method addSwitchMethod = pathUtilsClass.getMethod(
+                "addSwitchConstraint", String.class, int.class);
+            addSwitchMethod.invoke(null, "user_choice_1", userInput1);
+            addSwitchMethod.invoke(null, "user_choice_2", userInput2);
+
+            System.out.println("[Symbolic] Added switch constraints: user_choice_1 == " + userInput1 + ", user_choice_2 == " + userInput2);
+
+        } catch (Exception e) {
+            System.err.println("[Symbolic] Constraint collection failed: " + e.getMessage());
+            if (Boolean.getBoolean("DEBUG")) {
+                e.printStackTrace();
+            }
+        }
+
+        // Validate input ranges
+        if (userInput1 < 0 || userInput1 > 4 || userInput2 < 0 || userInput2 > 4) {
+            System.err.println("Invalid user choices: " + userInput1 + ", " + userInput2 + " (expected 0-4)");
+            return;
+        }
+
+        // 1) Setup Vitruvius user interaction for BOTH tasks
+        var userInteraction = new TestUserInteraction();
+        userInteraction.addNextSingleSelection(userInput1); // For first task
+        userInteraction.addNextSingleSelection(userInput2); // For second task
+
+        // 2) Build and initialize VSUM
+        InternalVirtualModel vsum = new VirtualModelBuilder()
+                .withStorageFolder(projectDir)
+                .withUserInteractorForResultProvider(
+                        new TestUserInteraction.ResultProvider(userInteraction))
+                .withChangePropagationSpecifications(
+                        new Amalthea2ascetChangePropagationSpecification())
+                .buildAndInitialize();
+
+        vsum.setChangePropagationMode(ChangePropagationMode.TRANSITIVE_CYCLIC);
+
+        // 3) Add component container
+        addComponentContainer(vsum, projectDir);
+
+        // 4) Add FIRST task (triggers first user interaction)
+        addTaskWithName(vsum, "task1");
+
+        // 5) Add SECOND task (triggers second user interaction)
+        addTaskWithName(vsum, "task2");
+
+        // 6) Merge and save results
+        try {
+            Path outDir = projectDir.resolve("galette-test-output");
+            mergeAndSave(vsum, outDir, "vsum-output.xmi");
+        } catch (IOException e) {
+            throw new RuntimeException("Could not persist VSUM result", e);
+        }
+    }
+
     /* ------------------------------------------------- helpers ------------------------------------------------- */
 
     private void addComponentContainer(VirtualModel vsum, Path projectDir) {
+        System.out.println("[DEBUG] addComponentContainer called with projectDir=" + projectDir);
+        System.out.println("[DEBUG] Creating view...");
         CommittableView view = getDefaultView(vsum, List.of(ComponentContainer.class))
                 .withChangeDerivingTrait();
-        modifyView(view, v -> v.registerRoot(
-                Model2Factory.eINSTANCE.createComponentContainer(),
-                URI.createFileURI(projectDir.resolve("example.model").toString())));
+        System.out.println("[DEBUG] View created: " + view);
+
+        Path modelPath = projectDir.resolve("example.model");
+        URI modelURI = URI.createFileURI(modelPath.toString());
+        System.out.println("[DEBUG] Model URI: " + modelURI);
+        System.out.println("[DEBUG] Creating ComponentContainer...");
+        var container = Model2Factory.eINSTANCE.createComponentContainer();
+        System.out.println("[DEBUG] ComponentContainer created: " + container);
+        System.out.println("[DEBUG] Calling registerRoot...");
+
+        modifyView(view, v -> {
+            System.out.println("[DEBUG] Inside modifyView lambda");
+            v.registerRoot(container, modelURI);
+            System.out.println("[DEBUG] registerRoot completed");
+        });
+        System.out.println("[DEBUG] addComponentContainer completed");
     }
 
     private void addTask(VirtualModel vsum) {
@@ -96,6 +194,20 @@ public class Test {
     }
 
     /** */
+
+    private void addTaskWithName(VirtualModel vsum, String taskName) {
+        CommittableView view = getDefaultView(vsum, List.of(ComponentContainer.class))
+                .withChangeDerivingTrait();
+        modifyView(view, v -> {
+            var task = Model2Factory.eINSTANCE.createTask();
+            task.setName(taskName);
+            v.getRootObjects(ComponentContainer.class)
+             .iterator()
+             .next()
+             .getTasks()
+             .add(task);
+        });
+    }
     private View getDefaultView(VirtualModel vsum, Collection<Class<?>> rootTypes) {
         var selector = vsum.createSelector(
                 ViewTypeFactory.createIdentityMappingViewType("default"));
