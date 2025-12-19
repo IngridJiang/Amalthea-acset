@@ -57,6 +57,7 @@ reaction TaskCreated {
 		call createAscetTask(newValue,affectedEObject)
 }
 
+
 routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer container){
 	update {
 		println("[Reaction] createAscetTask routine CALLED!")
@@ -87,46 +88,57 @@ routine createAscetTask(amalthea::Task task, amalthea::ComponentContainer contai
         .startInteraction()
         println("[Reaction] userInteractor returned: " + selected)
 
-        // Record symbolic constraint for the user's choice
-        // This enables automatic path exploration through all dialog options
-        val Integer symbolicSelected = if (selected !== null) {
-            // Use reflection to call SymbolicComparison.symbolicVitruviusChoice
-            // This avoids direct dependency on Galette classes in the reactions
+        // Process user choice with symbolic execution
+        var Integer symbolicSelected = selected
+        if (selected !== null) {
             try {
-                println("[Reaction] Attempting to call SymbolicComparison.symbolicVitruviusChoice")
-                println("  - selected = " + selected)
+                // Get or create tag for this user interaction with tag reuse support
+                // Use fully qualified name: ClassName:MethodName:variableName
+                val qualifiedName = "CreateAscetTaskRoutine:execute:userChoice"
+
+                // Call GaletteSymbolicator.getOrMakeSymbolicInt to handle tag reuse
+                // This method now returns a tagged Integer directly
+                val symbolicatorClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.GaletteSymbolicator")
+                val getOrMakeMethod = symbolicatorClass.getMethod("getOrMakeSymbolicInt",
+                    String, Integer.TYPE, Integer.TYPE, Integer.TYPE)
+
+                // getOrMakeSymbolicInt now returns the tagged value directly
+                val taggedSelected = getOrMakeMethod.invoke(null, qualifiedName, selected,
+                    Integer.valueOf(0), Integer.valueOf(options.size - 1)) as Integer
+
+                // Use symbolicVitruviusChoice to record switch constraints
                 val symbolicClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.SymbolicComparison")
-                println("  - Found class: " + symbolicClass)
                 val method = symbolicClass.getMethod("symbolicVitruviusChoice", Integer, Integer.TYPE, Integer.TYPE)
-                println("  - Found method: " + method)
-                val result = method.invoke(null, selected, 0, 4) as Integer
-                println("  - Method returned: " + result)
-                result
+                symbolicSelected = method.invoke(null, taggedSelected,
+                    Integer.valueOf(0), Integer.valueOf(options.size - 1)) as Integer
+                println("[Reaction] Processed user choice with symbolic execution (tag reuse enabled)")
             } catch (Exception e) {
-                // If symbolic execution is not available, use the original value
-                println("[Reaction] Failed to call SymbolicComparison: " + e.class.name + ": " + e.message)
+                println("[Reaction] Symbolic processing failed: " + e.message)
                 e.printStackTrace()
-                selected
+                // Fall back to concrete value
+                symbolicSelected = selected
             }
-        } else {
-            println("[Reaction] Selected is null, not calling SymbolicComparison")
-            selected
         }
 
         switch (symbolicSelected) {
             case 0: {
-                createInitTask(task,container)               
+                // Switch constraint already recorded by symbolicVitruviusChoice
+                createInitTask(task,container)
             }
             case 1: {
+                // Switch constraint already recorded by symbolicVitruviusChoice
                 createPeriodicTask(task,container)
             }
             case 2: {
+                // Switch constraint already recorded by symbolicVitruviusChoice
                 createSoftwareTask(task,container)
             }
             case 3: {
+                // Switch constraint already recorded by symbolicVitruviusChoice
                 createTimeTableTask(task,container)
             }
             case 4: {
+                // Switch constraint already recorded by symbolicVitruviusChoice
                 // no action
             }
         }

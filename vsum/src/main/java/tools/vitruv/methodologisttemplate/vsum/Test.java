@@ -33,7 +33,7 @@ public class Test {
 
     public void insertTask(Path projectDir, int userInput) {
         // GALETTE SYMBOLIC EXECUTION: Constraints are now automatically collected
-        // by the SymbolicComparison class in the reactions file.
+        // by calls in the reactions.
         // No manual constraint recording needed here!
         System.out.println("[Test.insertTask] Executing with user choice: " + userInput);
 
@@ -87,32 +87,10 @@ public class Test {
         System.out.println("[DEBUG] userInput2=" + userInput2);
         System.out.println("========================================");
 
-        // GALETTE SYMBOLIC EXECUTION: Manually collect path constraints for BOTH variables
-        try {
-            Class<?> pathUtilsClass = Class.forName("edu.neu.ccs.prl.galette.concolic.knarr.runtime.PathUtils");
-
-            // Add domain constraints for BOTH variables
-            java.lang.reflect.Method addDomainMethod = pathUtilsClass.getMethod(
-                "addIntDomainConstraint", String.class, int.class, int.class);
-            addDomainMethod.invoke(null, "user_choice_1", 0, 5);
-            addDomainMethod.invoke(null, "user_choice_2", 0, 5);
-
-            System.out.println("[Symbolic] Added domain constraints: 0 <= user_choice_1 < 5, 0 <= user_choice_2 < 5");
-
-            // Add switch constraints for BOTH variables
-            java.lang.reflect.Method addSwitchMethod = pathUtilsClass.getMethod(
-                "addSwitchConstraint", String.class, int.class);
-            addSwitchMethod.invoke(null, "user_choice_1", userInput1);
-            addSwitchMethod.invoke(null, "user_choice_2", userInput2);
-
-            System.out.println("[Symbolic] Added switch constraints: user_choice_1 == " + userInput1 + ", user_choice_2 == " + userInput2);
-
-        } catch (Exception e) {
-            System.err.println("[Symbolic] Constraint collection failed: " + e.getMessage());
-            if (Boolean.getBoolean("DEBUG")) {
-                e.printStackTrace();
-            }
-        }
+        // GALETTE SYMBOLIC EXECUTION: Constraints are now automatically collected
+        // by calls in the reactions for EACH user interaction.
+        // The reactions handle tagging, domain constraints, and branch tracking.
+        System.out.println("[Test.insertTwoTasks] Symbolic execution handled by reactions");
 
         // Validate input ranges
         if (userInput1 < 0 || userInput1 > 4 || userInput2 < 0 || userInput2 > 4) {
